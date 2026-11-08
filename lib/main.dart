@@ -37,13 +37,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
 
   var board = ConwayBoard(width: 20, height: 20, seed: 100);
 
@@ -51,7 +44,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _play() {
     if (_timer != null) return; // already playing
-    _timer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+    _timer = Timer.periodic(const Duration(milliseconds: 20), (_) {
       setState(() => board.step());
     });
   }
@@ -74,6 +67,13 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
+  void _toggle(int x, int y) {
+    final cell = Cell(x: x, y: y);
+    setState(() {
+      board.setAlive(cell, !board.isAlive(cell));
+    });
+  }
+
   Widget _buildCell(int index) {
     final colors = Theme.of(context).colorScheme;
     final x = index % 20;
@@ -81,16 +81,14 @@ class _MyHomePageState extends State<MyHomePage> {
     final alive = board.isAlive(Cell(x: x, y: y));
     const duration = Duration(milliseconds: 300);
 
-    return Container(
-      margin: const EdgeInsets.all(1),
-      decoration: BoxDecoration(
-        color: colors.onSurface.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(3),
-      ),
-      child: AnimatedSlide(
-        offset: alive ? Offset.zero : _absorbDirection(x, y),
-        duration: duration,
-        curve: Curves.easeIn,
+    return GestureDetector(
+      onTap: () => _toggle(x, y),
+      child: Container(
+        margin: const EdgeInsets.all(1),
+        decoration: BoxDecoration(
+          color: colors.onSurface.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(3),
+        ),
         child: AnimatedScale(
           scale: alive ? 1 : 0,
           duration: duration,
@@ -111,18 +109,6 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
     );
-  }
-
-  /// Points toward the first living neighbor, so a dying cell
-  /// slides into it. Returns zero if no neighbor is alive.
-  Offset _absorbDirection(int x, int y) {
-    for (final d in board.directions) {
-      final neighbor = Cell(x: x + d[1], y: y + d[0]);
-      if (board.contains(neighbor) && board.isAlive(neighbor)) {
-        return Offset(d[1].toDouble(), d[0].toDouble());
-      }
-    }
-    return Offset.zero;
   }
 
   @override
@@ -155,6 +141,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ],
             ),
           ),
+          Text("Generation ${board.generation}"),
         ],
       ),
     );
