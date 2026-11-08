@@ -37,27 +37,35 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-
   var board = ConwayBoard(width: 20, height: 20, seed: 100);
-
   Timer? _timer;
+  final Set<String> _snapShot = {};
 
   void _play() {
     if (_timer != null) return; // already playing
-    _timer = Timer.periodic(const Duration(milliseconds: 20), (_) {
-      setState(() => board.step());
+    _snapShot.add(board.render());
+    setState(() {
+      _timer = Timer.periodic(const Duration(milliseconds: 300), (_) {
+        setState(() => board.step());
+        final isNew = _snapShot.add(board.render());
+        if(!isNew) _pause();
+      });
     });
   }
 
   void _pause() {
-    _timer?.cancel();
-    _timer = null;
+    setState(() {
+      _timer?.cancel();
+      _timer = null;
+    });
   }
 
   void _reset() {
     _pause();
     setState(() {
-      board = ConwayBoard(width: 20, height: 20, seed: 2);
+      _snapShot.clear();
+      board = ConwayBoard(width: 20, height: 20, seed: 100);
+      _snapShot.add(board.render());
     });
   }
 
@@ -71,6 +79,8 @@ class _MyHomePageState extends State<MyHomePage> {
     final cell = Cell(x: x, y: y);
     setState(() {
       board.setAlive(cell, !board.isAlive(cell));
+      _snapShot.clear();
+      _snapShot.add(board.render());
     });
   }
 
@@ -115,7 +125,6 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
       body: Column(
@@ -135,8 +144,8 @@ class _MyHomePageState extends State<MyHomePage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                ElevatedButton(onPressed: _play, child: const Text('Play')),
-                ElevatedButton(onPressed: _pause, child: const Text('Pause')),
+                ElevatedButton(onPressed: (_timer != null) ? null : _play, child: const Text('Play')),
+                ElevatedButton(onPressed: (_timer != null) ? _pause : null, child: const Text('Pause')),
                 ElevatedButton(onPressed: _reset, child: const Text('Reset')),
               ],
             ),
