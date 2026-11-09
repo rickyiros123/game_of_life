@@ -3,29 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:cellular_automaton_zoo/cellular_automaton_zoo.dart';
 import 'dart:async';
 
-// >>> NEW: MU/TH/UR 6000 COLOR PALETTE
 
-// Main screen background: pure black, like a dark CRT terminal.
 const Color terminalBackground = Colors.black;
-// Slightly lighter green-black, used for raised panels around the board.
 const Color terminalSurface = Color(0xFF101B12);
-// Standard phosphor green for icons, buttons, and status labels.
 const Color terminalGreen = Color(0xFF65D982);
-// Brighter phosphor green for important text and living cells.
 const Color terminalBright = Color(0xFF9BFFAC);
-// Dimmer green for secondary labels so they do not compete with key information.
 const Color terminalMuted = Color(0xFF478C57);
-// Dark green borders separate the terminal's individual panels.
 const Color terminalBorder = Color(0xFF285B36);
-// The dark interior color of each cell when it is not alive.
 const Color terminalCell = Color(0xFF17251A);
-
-// <<< END NEW: COLOR PALETTE
-
-
-// --------------------------------------------------
-// ORIGINAL GAME BOARD
-// --------------------------------------------------
 
 class ConwayBoard extends CellularAutomaton
     with ConwayRules, AsciiRenderable {
@@ -41,7 +26,6 @@ void main() {
 }
 
 
-// >>> NEW: APPLICATION THEME
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -67,8 +51,7 @@ class MyApp extends StatelessWidget {
           onSurface: terminalBright,
         ),
 
-        // Monospaced lettering gives the interface a computer-console appearance.
-        fontFamily: 'monospace',
+        fontFamily: "MyFont",
 
         // Styles every AppBar: black background, green title, no raised shadow.
         appBarTheme: const AppBarTheme(
@@ -81,7 +64,7 @@ class MyApp extends StatelessWidget {
             fontSize: 14,
             fontWeight: FontWeight.bold,
             letterSpacing: 2,
-            fontFamily: 'monospace',
+            fontFamily: "MyFont",
           ),
         ),
 
@@ -97,7 +80,7 @@ class MyApp extends StatelessWidget {
               vertical: 12,
             ),
             textStyle: const TextStyle(
-              fontFamily: 'monospace',
+              fontFamily: "MyFont",
               fontWeight: FontWeight.bold,
               letterSpacing: 1,
               fontSize: 11,
