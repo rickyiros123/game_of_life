@@ -25,8 +25,6 @@ void main() {
   runApp(const MyApp());
 }
 
-
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -152,7 +150,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
     setState(() {
       board.setAlive(cell, !board.isAlive(cell));
-
       _snapShot.clear();
       _snapShot.add(board.render());
     });
