@@ -256,8 +256,6 @@ class _MyHomePageState extends State<MyHomePage> {
               ],
             ),
           ),
-
-          // Fixed status label on the right; decorative and always shown as online.
           const Text(
             "SYS ONLINE",
             style: TextStyle(
