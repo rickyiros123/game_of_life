@@ -1,7 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'package:cellular_automaton_zoo/cellular_automaton_zoo.dart';
-import 'dart:async';
+import 'package:game_of_life/game_controller.dart';
 
 
 const Color terminalBackground = Colors.black;
@@ -11,15 +10,6 @@ const Color terminalBright = Color(0xFF9BFFAC);
 const Color terminalMuted = Color(0xFF478C57);
 const Color terminalBorder = Color(0xFF285B36);
 const Color terminalCell = Color(0xFF17251A);
-
-class ConwayBoard extends CellularAutomaton with AsciiRenderable, EditableRules {
-  ConwayBoard({
-    required super.width,
-    required super.height,
-    required super.seed,
-  });
-
-}
 
 void main() {
   runApp(const MyApp());
@@ -105,76 +95,23 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  var board = ConwayBoard(width: 20, height: 20, seed: 1);
-
-  Timer? _timer;
-  final Set<String> _snapShot = {};
-
-  void _play() {
-    if (_timer != null) return;
-
-    _snapShot.add(board.render());
-
-    setState(() {
-      _timer = Timer.periodic(
-        const Duration(milliseconds: 1000),
-            (_) {
-          setState(() => board.step());
-
-          final isNew = _snapShot.add(board.render());
-
-          if (!isNew) _pause();
-        },
-      );
-    });
-  }
-
-  void _pause() {
-    setState(() {
-      _timer?.cancel();
-      _timer = null;
-    });
-  }
-
-  void _reset() {
-    _pause();
-    setState(() {
-      var currBirth = board.birth;
-      var currSurvive = board.survive;
-      _snapShot.clear();
-      board = ConwayBoard(width: 20, height: 20, seed: 1);
-      board.birth = currBirth;
-      board.survive = currSurvive;
-      _snapShot.add(board.render());
-    });
-  }
-
-  void _toggle(int x, int y) {
-    final cell = Cell(x: x, y: y);
-
-    setState(() {
-      board.setAlive(cell, !board.isAlive(cell));
-      _snapShot.clear();
-      _snapShot.add(board.render());
-    });
-  }
+  final controller = GameController();
 
   @override
   void dispose() {
-    _timer?.cancel();
+    controller.dispose();
     super.dispose();
   }
 
   Widget _buildCell(int index) {
     final x = index % 20;
     final y = index ~/ 20;
-
-    final alive = board.isAlive(Cell(x: x, y: y));
+    final alive = controller.isAlive(x, y);
 
     const duration = Duration(milliseconds: 800);
 
     return GestureDetector(
-      onTap: () => _toggle(x, y),
+      onTap: () => controller.toggle(x, y),
       child: Container(
         margin: const EdgeInsets.all(1),
         decoration: BoxDecoration(
@@ -325,7 +262,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
           const SizedBox(height: 5),
           Text(
-            "GEN ${board.generation.toString().padLeft(4, '0')}",
+            "GEN ${controller.generation.toString().padLeft(4, '0')}",
             style: const TextStyle(
               color: terminalBright,
               fontSize: 26,
@@ -353,7 +290,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               const Spacer(),
               Text(
-                _timer != null ? "RUNNING" : "STANDBY",
+                controller.isRunning ? "RUNNING" : "STANDBY",
                 style: const TextStyle(
                   color: terminalBright,
                   fontSize: 10,
@@ -374,7 +311,7 @@ class _MyHomePageState extends State<MyHomePage> {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           ElevatedButton(
-            onPressed: _timer != null ? null : _play,
+            onPressed: controller.isRunning ? null : controller.play,
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -387,12 +324,12 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
 
           ElevatedButton(
-            onPressed: _timer != null ? _pause : null,
+            onPressed: controller.isRunning ? controller.pause : null,
             child: const Text("Ⅱ PAUSE"),
           ),
 
           ElevatedButton(
-            onPressed: _reset,
+            onPressed: controller.reset,
             child: const Text("↻ RESET"),
           ),
         ],
@@ -402,77 +339,74 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // >>> NEW: TERMINAL APP BAR
-      appBar: AppBar(
-        title: Text(widget.title),
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: (value) async {
-              if (value != 'settings') return;
-              final result = await showDialog<(Set<int>, Set<int>)>(
-                context: context,
-                builder: (context) => SettingsDialog(
-                  initialBirth: board.birth,
-                  initialSurvive: board.survive,
-                ),
-              );
-              if(result == null) return;
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) => Scaffold(
+        appBar: AppBar(
+          title: Text(widget.title),
+          actions: [
+            PopupMenuButton<String>(
+              onSelected: (value) async {
+                if (value != 'settings') return;
+                final result = await showDialog<(Set<int>, Set<int>)>(
 
-              setState(() {
-                board.birth = result.$1;
-                board.survive = result.$2;
-                _snapShot.clear();
-                _snapShot.add(board.render());
-              });
-            },
-            itemBuilder: (context) => const[
-              PopupMenuItem(value: 'settings', child: Text('Settings')),
-            ],
-          )
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Terminal header
-            _buildHeader(),
-            Flexible(
-              child: Center(
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: Container(
-                    margin: const EdgeInsets.all(12),
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: terminalSurface,
-                      border: Border.all(
-                        color: terminalBorder,
-                        width: 1.5,
+                  context: context,
+                  builder: (context) => SettingsDialog(
+                    initialBirth: controller.birth,
+                    initialSurvive: controller.survive,
+                  ),
+                );
+                if (!mounted) return;
+                if(result == null) return;
+                controller.setRules(result.$1, result.$2);
+              },
+              itemBuilder: (context) => const[
+                PopupMenuItem(value: 'settings', child: Text('Settings')),
+              ],
+            )
+          ],
+        ),
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Terminal header
+              _buildHeader(),
+              Flexible(
+                child: Center(
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: Container(
+                      margin: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: terminalSurface,
+                        border: Border.all(
+                          color: terminalBorder,
+                          width: 1.5,
+                        ),
                       ),
-                    ),
-                    child: GridView.count(
-                      crossAxisCount: 20,
-                      physics: const NeverScrollableScrollPhysics(),
-                      padding: EdgeInsets.zero,
-                      // Calls _buildCell(index) for each index from 0 through 399.
-                      children: List.generate(400, _buildCell),
+                      child: GridView.count(
+                        crossAxisCount: 20,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: EdgeInsets.zero,
+                        // Calls _buildCell(index) for each index from 0 through 399.
+                        children: List.generate(400, _buildCell),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
 
-            _buildControls(),
+              _buildControls(),
 
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              child: _buildGenerationMonitor(),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                child: _buildGenerationMonitor(),
+              ),
+            ],
+          ),
         ),
       ),
-
     );
   }
 }
@@ -492,8 +426,6 @@ class SettingsDialog extends StatefulWidget {
 }
 
 class _SettingsDialogState extends State<SettingsDialog>{
-  bool darkMode = false;
-  double fontSize = 16;
   late Set<int> _birth;
   late Set<int> _survive;
 
@@ -594,16 +526,5 @@ class SquareRow extends StatelessWidget {
     );
   }
 }
-
-mixin EditableRules {
-  Set<int> birth = {3};
-  Set<int> survive = {2, 3};
-
-  bool nextState(bool currentlyAlive, int liveNeighborCount) =>
-      currentlyAlive
-          ? survive.contains(liveNeighborCount)
-          : birth.contains(liveNeighborCount);
-}
-
 
 
