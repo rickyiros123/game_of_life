@@ -21,13 +21,10 @@ mixin ConwayRules {
 
 mixin CustomRules {
   /// Returns true if the cell should be alive in the next generation.
+  Set<int> birth = {3};
+  Set<int> survive = {2, 3};
+
   bool nextState(bool currentlyAlive, int liveNeighborCount){
-    if(!currentlyAlive){
-      // Birth (B3): a dead cell comes alive with exactly 3/6 neighbors.
-      return liveNeighborCount == 3 || liveNeighborCount == 6;
-    }
-    // Survival (S23): a live cell stays alive with 2 or 3 neighbors.
-    // Fewer (loneliness) or more (overcrowding) and it dies.
-    return liveNeighborCount == 2 || liveNeighborCount == 3;
+    return currentlyAlive ?  survive.contains(birth) : birth.contains(survive);
   }
 }

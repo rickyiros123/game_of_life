@@ -12,8 +12,7 @@ const Color terminalMuted = Color(0xFF478C57);
 const Color terminalBorder = Color(0xFF285B36);
 const Color terminalCell = Color(0xFF17251A);
 
-class ConwayBoard extends CellularAutomaton
-    with ConwayRules, AsciiRenderable {
+class ConwayBoard extends CellularAutomaton with CustomRules, AsciiRenderable {
   ConwayBoard({
     required super.width,
     required super.height,
@@ -106,6 +105,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   var board = ConwayBoard(width: 20, height: 20, seed: 100);
+
   Timer? _timer;
   final Set<String> _snapShot = {};
 
@@ -402,6 +402,21 @@ class _MyHomePageState extends State<MyHomePage> {
       // >>> NEW: TERMINAL APP BAR
       appBar: AppBar(
         title: Text(widget.title),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value){
+              if (value == 'settings'){
+                showDialog(
+                  context: context,
+                  builder: (context) => const SettingsDialog(),
+                );
+              }
+            },
+            itemBuilder: (context) => const[
+              PopupMenuItem(value: 'settings', child: Text('Settings')),
+            ],
+          )
+        ],
       ),
       body: SafeArea(
         child: Column(
@@ -447,3 +462,49 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
+
+class SettingsDialog extends StatefulWidget {
+  const SettingsDialog({super.key});
+
+  @override
+  State<SettingsDialog> createState() => _SettingsDialogState();
+}
+
+class _SettingsDialogState extends State<SettingsDialog>{
+  bool darkMode = false;
+  double fontSize = 16;
+
+  @override
+  Widget build(BuildContext context){
+    return AlertDialog(
+      title: const Text('Custom Rules'),
+      content: Row(
+        m: MainAxisSize.min,
+        children: [
+
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, (darkMode, fontSize)),
+          child: const Text('Save')
+        )
+      ],
+    );
+  }
+}
+
+class NeighborCountRow extends StatelessWidget {
+  const NeighborCountRow({
+    super.key,
+    required this.selected,
+    required this.onToggle,
+  });
+}
+
+
+
