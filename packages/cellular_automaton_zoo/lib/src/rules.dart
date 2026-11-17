@@ -25,6 +25,17 @@ mixin CustomRules {
   Set<int> survive = {2, 3};
 
   bool nextState(bool currentlyAlive, int liveNeighborCount){
-    return currentlyAlive ?  survive.contains(birth) : birth.contains(survive);
+    return currentlyAlive ?  survive.contains(liveNeighborCount) : birth.contains(liveNeighborCount);
+  }
+
+  void toggleBirth(int n) =>
+      birth.contains(n) ? birth.remove(n) : birth.add(n);
+
+  void toggleSurvive(int n) =>
+      survive.contains(n) ? survive.remove(n) : survive.add(n);
+
+  void setRule(Set<int> newBirth, Set<int> newSurvive){
+    birth = {...newBirth};
+    survive = {...newSurvive};
   }
 }

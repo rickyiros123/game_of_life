@@ -12,12 +12,13 @@ const Color terminalMuted = Color(0xFF478C57);
 const Color terminalBorder = Color(0xFF285B36);
 const Color terminalCell = Color(0xFF17251A);
 
-class ConwayBoard extends CellularAutomaton with CustomRules, AsciiRenderable {
+class ConwayBoard extends CellularAutomaton with AsciiRenderable, EditableRules {
   ConwayBoard({
     required super.width,
     required super.height,
     required super.seed,
   });
+
 }
 
 void main() {
@@ -104,7 +105,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  var board = ConwayBoard(width: 20, height: 20, seed: 100);
+  var board = ConwayBoard(width: 20, height: 20, seed: 1);
 
   Timer? _timer;
   final Set<String> _snapShot = {};
@@ -137,10 +138,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _reset() {
     _pause();
-
     setState(() {
       _snapShot.clear();
-      board = ConwayBoard(width: 20, height: 20, seed: 100);
+      board = ConwayBoard(width: 20, height: 20, seed: 1);
       _snapShot.add(board.render());
     });
   }
@@ -233,7 +233,7 @@ class _MyHomePageState extends State<MyHomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "WEYLAND-YUTANI CORP.",
+                  "ROSE CORP.",
                   style: TextStyle(
                     color: terminalMuted,
                     fontSize: 9,
@@ -404,13 +404,23 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
         actions: [
           PopupMenuButton<String>(
-            onSelected: (value){
-              if (value == 'settings'){
-                showDialog(
-                  context: context,
-                  builder: (context) => const SettingsDialog(),
-                );
-              }
+            onSelected: (value) async {
+              if (value != 'settings') return;
+              final result = await showDialog<(Set<int>, Set<int>)>(
+                context: context,
+                builder: (context) => SettingsDialog(
+                  initialBirth: board.birth,
+                  initialSurvive: board.survive,
+                ),
+              );
+              if(result == null) return;
+
+              setState(() {
+                board.birth = result.$1;
+                board.survive = result.$2;
+                _snapShot.clear();
+                _snapShot.add(board.render());
+              });
             },
             itemBuilder: (context) => const[
               PopupMenuItem(value: 'settings', child: Text('Settings')),
@@ -464,7 +474,14 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 class SettingsDialog extends StatefulWidget {
-  const SettingsDialog({super.key});
+  const SettingsDialog({
+    super.key,
+    required this.initialBirth,
+    required this.initialSurvive,
+  });
+
+  final Set<int> initialBirth;
+  final Set<int> initialSurvive;
 
   @override
   State<SettingsDialog> createState() => _SettingsDialogState();
@@ -473,16 +490,42 @@ class SettingsDialog extends StatefulWidget {
 class _SettingsDialogState extends State<SettingsDialog>{
   bool darkMode = false;
   double fontSize = 16;
+  late Set<int> _birth;
+  late Set<int> _survive;
+
+  @override
+  void initState() {
+    super.initState();
+    _birth = Set.of(widget.initialBirth);
+    _survive = Set.of(widget.initialSurvive);
+  }
 
   @override
   Widget build(BuildContext context){
     return AlertDialog(
+      backgroundColor: terminalBorder,
       title: const Text('Custom Rules'),
-      content: Row(
-        m: MainAxisSize.min,
-        children: [
+      content: SizedBox(
+        width: 350,
+        height: 160,
+        child: Column(
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            SquareRow(
+              selected: _birth,
+              onChanged: (updated) => setState(() => _birth = updated),
+            ),
+            Text("Birth"),
 
-        ],
+            SizedBox(height: 1),
+
+            SquareRow(
+              selected: _survive,
+              onChanged: (updated) => setState(() => _survive = updated),
+            ),
+            Text("Survive")
+          ],
+        ),
       ),
       actions: [
         TextButton(
@@ -490,7 +533,7 @@ class _SettingsDialogState extends State<SettingsDialog>{
           child: const Text('Cancel'),
         ),
         TextButton(
-          onPressed: () => Navigator.pop(context, (darkMode, fontSize)),
+          onPressed: () => Navigator.pop(context, (_birth, _survive)),
           child: const Text('Save')
         )
       ],
@@ -498,12 +541,64 @@ class _SettingsDialogState extends State<SettingsDialog>{
   }
 }
 
-class NeighborCountRow extends StatelessWidget {
-  const NeighborCountRow({
+class SquareRow extends StatelessWidget {
+  const SquareRow({
     super.key,
-    required this.selected,
-    required this.onToggle,
+    this.activeColor = terminalBright,
+    this.inactiveColor = terminalSurface,
+    this.selected = const {},
+    required this.onChanged
   });
+
+  final Color activeColor;
+  final Color inactiveColor;
+  final Set<int> selected;
+  final ValueChanged<Set<int>> onChanged;
+
+  @override
+  Widget build(BuildContext context){
+    return Row(
+      children: List.generate(9, (i){
+        final on = selected.contains(i);
+        return Expanded(
+          child: AspectRatio(
+            aspectRatio: 1,
+            child: GestureDetector(
+                onTap: () {
+                  final updated = on
+                      ? ({...selected}..remove(i))
+                      : {...selected, i};
+                  onChanged(updated);
+                },
+                child: Container(
+                  margin: const EdgeInsets.all(1),
+                  color: on ? activeColor : inactiveColor,
+                  child: Center(
+                      child: Text(
+                        '$i',
+                        style: TextStyle(
+                          color: on ? Colors.black : Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                  ),
+                )
+            ),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+mixin EditableRules {
+  Set<int> birth = {3};
+  Set<int> survive = {2, 3};
+
+  bool nextState(bool currentlyAlive, int liveNeighborCount) =>
+      currentlyAlive
+          ? survive.contains(liveNeighborCount)
+          : birth.contains(liveNeighborCount);
 }
 
 
