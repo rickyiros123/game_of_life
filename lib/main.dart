@@ -117,7 +117,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     setState(() {
       _timer = Timer.periodic(
-        const Duration(milliseconds: 300),
+        const Duration(milliseconds: 1000),
             (_) {
           setState(() => board.step());
 
@@ -139,8 +139,12 @@ class _MyHomePageState extends State<MyHomePage> {
   void _reset() {
     _pause();
     setState(() {
+      var currBirth = board.birth;
+      var currSurvive = board.survive;
       _snapShot.clear();
       board = ConwayBoard(width: 20, height: 20, seed: 1);
+      board.birth = currBirth;
+      board.survive = currSurvive;
       _snapShot.add(board.render());
     });
   }
@@ -167,7 +171,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     final alive = board.isAlive(Cell(x: x, y: y));
 
-    const duration = Duration(milliseconds: 250);
+    const duration = Duration(milliseconds: 800);
 
     return GestureDetector(
       onTap: () => _toggle(x, y),
