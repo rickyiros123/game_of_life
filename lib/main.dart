@@ -1,4 +1,6 @@
 
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:game_of_life/game_controller.dart';
 
@@ -23,7 +25,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'MU/TH/UR 6000',
-
       theme: ThemeData(
         // Use Flutter's dark theme so default widgets also fit the terminal.
         brightness: Brightness.dark,
@@ -103,12 +104,13 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
+
   Widget _buildCell(int index) {
     final x = index % 20;
     final y = index ~/ 20;
     final alive = controller.isAlive(x, y);
 
-    const duration = Duration(milliseconds: 800);
+    final duration = Duration(milliseconds: 250);
 
     return GestureDetector(
       onTap: () => controller.toggle(x, y),
@@ -128,7 +130,6 @@ class _MyHomePageState extends State<MyHomePage> {
           curve: Curves.easeIn,
           child: Container(
             decoration: BoxDecoration(
-              // Bright green fill is the visible 'phosphor' for a living cell.
               color: terminalBright,
               borderRadius: BorderRadius.circular(2),
               // A soft green shadow creates the CRT-like glow around living cells.
@@ -320,14 +321,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   Text('PLAY'),
                 ],
               )
-
           ),
-
           ElevatedButton(
             onPressed: controller.isRunning ? controller.pause : null,
             child: const Text("Ⅱ PAUSE"),
           ),
-
           ElevatedButton(
             onPressed: controller.reset,
             child: const Text("↻ RESET"),
@@ -348,8 +346,9 @@ class _MyHomePageState extends State<MyHomePage> {
             PopupMenuButton<String>(
               onSelected: (value) async {
                 if (value != 'settings') return;
+                bool wasRunning = controller.isRunning;
+                controller.pause();
                 final result = await showDialog<(Set<int>, Set<int>)>(
-
                   context: context,
                   builder: (context) => SettingsDialog(
                     initialBirth: controller.birth,
@@ -357,8 +356,8 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 );
                 if (!mounted) return;
-                if(result == null) return;
-                controller.setRules(result.$1, result.$2);
+                if(result != null) controller.setRules(result.$1, result.$2);
+                if(wasRunning) controller.play();
               },
               itemBuilder: (context) => const[
                 PopupMenuItem(value: 'settings', child: Text('Settings')),
@@ -452,14 +451,17 @@ class _SettingsDialogState extends State<SettingsDialog>{
               onChanged: (updated) => setState(() => _birth = updated),
             ),
             Text("Birth"),
-
             SizedBox(height: 1),
-
             SquareRow(
               selected: _survive,
               onChanged: (updated) => setState(() => _survive = updated),
             ),
-            Text("Survive")
+            Text("Survive"),
+            Slider(
+              // ignore: deprecated_member_use
+              value: 1,
+              max: 100, onChanged: (double value) {  },
+            ),
           ],
         ),
       ),
@@ -471,7 +473,7 @@ class _SettingsDialogState extends State<SettingsDialog>{
         TextButton(
           onPressed: () => Navigator.pop(context, (_birth, _survive)),
           child: const Text('Save')
-        )
+        ),
       ],
     );
   }

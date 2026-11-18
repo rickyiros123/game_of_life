@@ -1,27 +1,29 @@
 import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:cellular_automaton_zoo/cellular_automaton_zoo.dart';
 import 'package:game_of_life/life_board.dart';
 
 const boardSeed = 1;
 
+
 class GameController extends ChangeNotifier {
   GameController({
     this.size = 20,
     this.seed = 1,
-    this.tickSpeed = const Duration(milliseconds: 1000),
-  }) : _board = LifeBoard(width: size, height: size, seed: seed);
+    this.initialSpeed = const Duration(milliseconds: 250),
+  }) : _board = LifeBoard(width: size, height: size, seed: seed), _tickSpeed = initialSpeed;
 
   // Settings, fixed for the controller's lifetime.
   final int size;
   final int seed;
-  final Duration tickSpeed;
+  final Duration initialSpeed;
 
   // Private game state. Only the controller changes these.
   LifeBoard _board;
   Timer? _timer;
   final Set<String> _history = {};
+  Duration _tickSpeed;
+
 
   // Read-only views for the UI.
   bool get isRunning => _timer != null;
@@ -33,7 +35,7 @@ class GameController extends ChangeNotifier {
   void play() {
     if (_timer != null) return;
     _history.add(_board.render());
-    _timer = Timer.periodic(tickSpeed, (_) => tick());
+    _timer = Timer.periodic(_tickSpeed, (_) => tick());
     notifyListeners();
   }
 
@@ -83,5 +85,20 @@ class GameController extends ChangeNotifier {
     _timer?.cancel();
     super.dispose();
   }
+
+  void setSpeed(Duration newSpeed){
+    _tickSpeed = newSpeed;
+    if(isRunning){
+      _timer?.cancel();
+      _timer = null;
+      _timer = Timer.periodic(_tickSpeed, (_) => tick());
+    }
+    notifyListeners();
+  }
+
+  Duration getSpeed() {
+    return _tickSpeed;
+  }
+
 }
 
