@@ -1,4 +1,5 @@
 # Game of Life
+https://rickyiros123.github.io/game_of_life/
 
 A Flutter app for Conway's Game of Life and its variants, with a retro green-phosphor terminal look, smooth cell animations, and a live rule editor. The simulation engine is a separate, pure-Dart package with its own test suite, and the app layers a testable game controller and a UI on top of it.
 
