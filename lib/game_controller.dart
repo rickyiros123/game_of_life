@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:cellular_automaton_zoo/cellular_automaton_zoo.dart';
 import 'package:game_of_life/life_board.dart';
 
-const boardSeed = 1;
 
 
 class GameController extends ChangeNotifier {
@@ -27,10 +26,11 @@ class GameController extends ChangeNotifier {
 
   // Read-only views for the UI.
   bool get isRunning => _timer != null;
+  Duration get speed => _tickSpeed;
   int get generation => _board.generation;
-  bool isAlive(int x, int y) => _board.isAlive(Cell(x: x, y: y));
   Set<int> get birth => _board.birth;
   Set<int> get survive => _board.survive;
+  bool isAlive(int x, int y) => _board.isAlive(Cell(x: x, y: y));
 
   void play() {
     if (_timer != null) return;
@@ -47,9 +47,9 @@ class GameController extends ChangeNotifier {
   }
 
   void pause() {
-      _timer?.cancel();
-      _timer = null;
-      notifyListeners();
+    _timer?.cancel();
+    _timer = null;
+    notifyListeners();
   }
 
   void reset() {
@@ -57,7 +57,7 @@ class GameController extends ChangeNotifier {
     var currBirth = _board.birth;
     var currSurvive = _board.survive;
     _history.clear();
-    _board = LifeBoard(width: size, height: size, seed: boardSeed);
+    _board = LifeBoard(width: size, height: size, seed: seed);
     _board.birth = currBirth;
     _board.survive = currSurvive;
     _history.add(_board.render());
@@ -80,25 +80,20 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
   void setSpeed(Duration newSpeed){
     _tickSpeed = newSpeed;
     if(isRunning){
       _timer?.cancel();
-      _timer = null;
       _timer = Timer.periodic(_tickSpeed, (_) => tick());
     }
     notifyListeners();
   }
 
-  Duration getSpeed() {
-    return _tickSpeed;
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _timer = null;
+    super.dispose();
   }
-
 }
 

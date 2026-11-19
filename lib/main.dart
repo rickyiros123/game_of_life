@@ -1,6 +1,4 @@
 
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:game_of_life/game_controller.dart';
 
@@ -348,21 +346,25 @@ class _MyHomePageState extends State<MyHomePage> {
                 if (value != 'settings') return;
                 bool wasRunning = controller.isRunning;
                 controller.pause();
-                final result = await showDialog<(Set<int>, Set<int>)>(
+                final result = await showDialog<(Set<int>, Set<int>, Duration)>(
                   context: context,
                   builder: (context) => SettingsDialog(
                     initialBirth: controller.birth,
                     initialSurvive: controller.survive,
+                    initialSpeed: controller.speed,
                   ),
                 );
                 if (!mounted) return;
-                if(result != null) controller.setRules(result.$1, result.$2);
+                if(result != null){ 
+                  controller.setRules(result.$1, result.$2);
+                  controller.setSpeed(result.$3);
+                }
                 if(wasRunning) controller.play();
               },
               itemBuilder: (context) => const[
                 PopupMenuItem(value: 'settings', child: Text('Settings')),
               ],
-            )
+            ),
           ],
         ),
         body: SafeArea(
@@ -415,10 +417,12 @@ class SettingsDialog extends StatefulWidget {
     super.key,
     required this.initialBirth,
     required this.initialSurvive,
+    required this.initialSpeed
   });
 
   final Set<int> initialBirth;
   final Set<int> initialSurvive;
+  final Duration initialSpeed;
 
   @override
   State<SettingsDialog> createState() => _SettingsDialogState();
@@ -427,24 +431,26 @@ class SettingsDialog extends StatefulWidget {
 class _SettingsDialogState extends State<SettingsDialog>{
   late Set<int> _birth;
   late Set<int> _survive;
+  late Duration _speed;
 
   @override
   void initState() {
     super.initState();
     _birth = Set.of(widget.initialBirth);
     _survive = Set.of(widget.initialSurvive);
+    _speed = widget.initialSpeed;
   }
 
   @override
   Widget build(BuildContext context){
     return AlertDialog(
+      scrollable: true,
       backgroundColor: terminalBorder,
-      title: const Text('Custom Rules'),
+      title: const Text('Set Rules'),
       content: SizedBox(
         width: 350,
-        height: 160,
         child: Column(
-          mainAxisSize: MainAxisSize.max,
+          mainAxisSize: MainAxisSize.min,
           children: [
             SquareRow(
               selected: _birth,
@@ -458,10 +464,14 @@ class _SettingsDialogState extends State<SettingsDialog>{
             ),
             Text("Survive"),
             Slider(
-              // ignore: deprecated_member_use
-              value: 1,
-              max: 100, onChanged: (double value) {  },
+              value: _speed.inMilliseconds.toDouble(),
+              min: 250,
+              max: 1000,
+              onChanged: (newValue) => setState(
+                      () => _speed = Duration(milliseconds: newValue.round())
+              ),
             ),
+            Text('${_speed.inMilliseconds} ms per generation'),
           ],
         ),
       ),
@@ -471,7 +481,7 @@ class _SettingsDialogState extends State<SettingsDialog>{
           child: const Text('Cancel'),
         ),
         TextButton(
-          onPressed: () => Navigator.pop(context, (_birth, _survive)),
+          onPressed: () => Navigator.pop(context, (_birth, _survive, _speed)),
           child: const Text('Save')
         ),
       ],
