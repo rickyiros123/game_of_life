@@ -77,10 +77,9 @@ dart test
 ## Roadmap
 
 - Unit tests for `GameController` and widget tests for the UI, run automatically with GitHub Actions
-- A live web demo
 - Rendering with `CustomPainter` to support much larger boards
 - Importing and exporting patterns in the standard RLE format
-- A speed control and a step-by-step mode
+- A step-by-step mode
 - Timeline scrubbing to rewind and replay a run
 
 ## Background
